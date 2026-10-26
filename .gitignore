@@ -1,0 +1,23 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Temporary and build artifacts
+/tmp/
+*.asar
+*.asar.unpacked
+*.log
+*.tmp
+*.bak
+
+# Environment & User data
+.env
+.venv/
+env/
+venv/
+node_modules/
+
+# OS specific
+.DS_Store
+Thumbs.db

@@ -1,0 +1,60 @@
+/* ======================================================================
+   Antigravity IDE — Plantilla Glassmorphism (Tailwind & Electron Native)
+   ====================================================================== */
+
+:root {
+  --background: rgba(12, 14, 18, 0.65) !important;
+  --color-background: rgba(12, 14, 18, 0.65) !important;
+  --sidebar: rgba(14, 16, 22, 0.72) !important;
+  --color-sidebar-secondary: rgba(18, 20, 28, 0.70) !important;
+  --card: rgba(16, 18, 24, 0.70) !important;
+  --color-card: rgba(16, 18, 24, 0.70) !important;
+}
+
+html, body {
+  background-image: url("TU_DATA_URI_O_RUTA_AQUI") !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-attachment: fixed !important;
+  background-repeat: no-repeat !important;
+}
+
+.bg-background, [class*="bg-background"] {
+  background-color: transparent !important;
+  background-image: url("TU_DATA_URI_O_RUTA_AQUI") !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-attachment: fixed !important;
+}
+
+.bg-sidebar, [class*="bg-sidebar"] {
+  background-color: rgba(12, 14, 20, 0.72) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+
+.bg-card, [class*="bg-card"] {
+  background-color: rgba(16, 18, 24, 0.68) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+.h-screen > .shrink-0, .h-screen > .shrink-0 > div {
+  background-color: rgba(10, 12, 16, 0.80) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
+.flex-1.flex.min-h-0 > div {
+  background-color: rgba(12, 14, 18, 0.60) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+.bg-border, .border-border, [class*="border-border"] {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.text-foreground, p, span, h1, h2, h3, h4, h5, h6, pre, code, button, input, textarea {
+  opacity: 1 !important;
+}
