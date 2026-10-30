@@ -156,6 +156,17 @@ Laboratorio de personalización y hardening de entornos de desarrollo en Linux M
 
 ---
 
+
+---
+
+## 📊 Evidencia de Ejecución en Vivo
+
+A continuación se muestra la evidencia empírica de la ejecución determinista del pipeline de verificación e integridad técnica:
+
+<div align="center">
+  <img src="./assets/wallpaper-execution.png" alt="Execution Results" width="95%" style="border-radius: 8px; border: 1px solid #282e3e; margin: 16px 0;" />
+</div>
+
 ## 📄 Licencia
 
 Este proyecto está bajo la Licencia [MIT](LICENSE).
