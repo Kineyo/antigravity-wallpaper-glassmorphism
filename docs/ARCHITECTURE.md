@@ -2,7 +2,7 @@
 
 ## Introducción
 
-Google Antigravity IDE (v2.9.1+) es una aplicación basada en **Electron** que encapsula una arquitectura web moderna (SPA servida localmente por un backend interno en Go / `language_server`). 
+Google Antigravity 2.0 2.0 (v2.9.1+) es una aplicación basada en **Electron** que encapsula una arquitectura web moderna (SPA servida localmente por un backend interno en Go / `language_server`). 
 
 Al no ser un fork de VS Code y tener `devTools: false` en producción sin sistema de extensiones para temas, la personalización requiere una solución a nivel de runtime Electron.
 
@@ -23,7 +23,7 @@ graph TD
     C -->|3. MutationObserver| D
     C -->|4. History API Interceptor| D
     C -->|5. Heartbeat 800ms| D
-    D -->|Estilos Glassmorphism Activos| E[UI de Antigravity IDE]
+    D -->|Estilos Glassmorphism Activos| E[UI de Antigravity 2.0]
 ```
 
 ### 1. Nivel Preload (`preload.js`)

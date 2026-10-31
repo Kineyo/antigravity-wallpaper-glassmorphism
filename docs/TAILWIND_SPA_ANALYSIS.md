@@ -1,4 +1,4 @@
-# Análisis del DOM y Tailwind CSS en Antigravity IDE
+# Análisis del DOM y Tailwind CSS en Antigravity 2.0
 
 ## Estructura Jerárquica del DOM
 
