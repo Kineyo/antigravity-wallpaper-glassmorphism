@@ -7,6 +7,10 @@
 
 > **Personalización avanzada de Google Antigravity IDE con wallpapers locales, efecto Glassmorphism y arquitectura de persistencia indestructible de 5 capas.**
 
+<div align="center">
+  <img src="./assets/antigravity-glassmorphism-showcase.jpg" alt="Google Antigravity Glassmorphism UI Showcase" width="100%" style="border-radius: 10px; margin: 16px 0; box-shadow: 0 8px 24px rgba(0,0,0,0.6);" />
+</div>
+
 ---
 
 ## 📖 Descripción General
