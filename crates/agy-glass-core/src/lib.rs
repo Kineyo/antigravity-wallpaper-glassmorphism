@@ -10,7 +10,10 @@ pub use css_gen::{GlassConfig, generate_css};
 pub use image_proc::optimize_image_to_data_uri;
 pub use backup::{calculate_sha256, create_backup, verify_backup};
 pub use patcher::{patch_preload, patch_utils};
-pub use paths::{find_antigravity_asar, get_candidate_asar_paths, get_wallpaper_dirs};
+pub use paths::{
+    find_antigravity_asar, get_candidate_asar_paths, get_wallpaper_dirs,
+    get_custom_css_path, get_backup_base_dir, get_devtools_port_file,
+};
 
 #[cfg(test)]
 mod tests {

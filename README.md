@@ -1,11 +1,11 @@
 # 🌌 Antigravity Wallpaper Glassmorphism
 
-[![Platform: Linux Mint](https://img.shields.io/badge/Platform-Linux%20Mint%20Cinnamon-87cf3e.svg?logo=linuxmint&logoColor=white)](https://linuxmint.com/)
+[![Platform: Linux](https://img.shields.io/badge/Platform-Debian%20%7C%20Ubuntu%20%7C%20Mint%20%7C%20Arch%20Linux-87cf3e.svg?logo=linux&logoColor=white)](https://archlinux.org/)
+[![Engine: Rust](https://img.shields.io/badge/Engine-Rust%202021-DEA584.svg?logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![App: Google Antigravity 2.0](https://img.shields.io/badge/Google%20Antigravity%202.0-Desktop-4285F4.svg?logo=google&logoColor=white)](https://antigravity.google)
-[![Engine: Electron & Tailwind](https://img.shields.io/badge/Engine-Electron%20%7C%20TailwindCSS-38bdf8.svg?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> **Personalización avanzada de Google Antigravity 2.0 2.0 con wallpapers locales, efecto Glassmorphism y arquitectura de persistencia indestructible de 5 capas.**
+> **Motor nativo en Rust para personalización de fondos y temas Glassmorphism en Google Antigravity 2.0 con soporte multi-distro (Debian, Ubuntu, Mint, Arch Linux / AUR) y arquitectura reactiva sin I/O bloqueante.**
 
 <div align="center">
   <img src="./assets/antigravity-glassmorphism-showcase.jpg" alt="Google Antigravity 2.0 Glassmorphism UI Showcase" width="100%" style="border-radius: 10px; margin: 16px 0; box-shadow: 0 8px 24px rgba(0,0,0,0.6);" />
@@ -15,119 +15,92 @@
 
 ## 📖 Descripción General
 
-**Google Antigravity 2.0 2.0** es un entorno de desarrollo asistido por IA basado en Electron. Por defecto, su interfaz posee un fondo oscuro sólido `#101010`, carece de sistema de extensiones para temas y tiene las herramientas de desarrollo (*DevTools*) deshabilitadas en entornos de producción.
+**Google Antigravity 2.0** es un entorno de desarrollo asistido por IA basado en Electron. Por defecto, su interfaz posee un fondo oscuro sólido `#101010` y carece de soporte oficial para wallpapers personalizados.
 
-Este laboratorio proporciona una solución técnica completa, segura y reversible para:
-1. Utilizar tus propias **fotografías y wallpapers locales** (JPG, PNG, WebP) como fondo de la interfaz.
-2. Aplicar un efecto de diseño moderno **Glassmorphism** (paneles translúcidos con `backdrop-filter: blur()`).
-3. Mantener **legibilidad 100% nítida** en textos, código, botones y menús.
-4. Garantizar **persistencia indestructible**: el fondo no desaparece al cambiar de chat, navegar entre proyectos o ante reinicios automáticos del servidor interno de Antigravity.
-5. Permitir el **cambio en caliente**: actualiza la imagen en vivo en la ventana abierta sin necesidad de reiniciar la aplicación.
-
----
-
-## 🏛️ Arquitectura de Persistencia Indestructible (5 Capas)
-
-A diferencia de VS Code, la interfaz de Antigravity es una **Single Page Application (SPA)** reactiva que monta capas opacas (`.bg-background`) y reinicia dinámicamente su servidor backend (`language_server`).
-
-Para resolver esto de forma definitiva, diseñamos una arquitectura de **Doble Blindaje**:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     ANTIGRAVITY IDE                         │
-├─────────────────────────────────────────────────────────────┤
-│  Nivel 1: preload.js (Inyección autónoma previa al DOM)     │
-│  Nivel 2: MutationObserver (Defensa activa anti-reemplazo)  │
-│  Nivel 3: History API Interceptor (pushState / replaceState)│
-│  Nivel 4: Heartbeat de Salvaguarda (Monitoreo cada 800ms)   │
-│  Nivel 5: utils.js (Respaldo nativo Chromium insertCSS)     │
-└─────────────────────────────────────────────────────────────┘
-```
-
-Consulta los detalles técnicos en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) y [docs/TAILWIND_SPA_ANALYSIS.md](docs/TAILWIND_SPA_ANALYSIS.md).
+Este proyecto provee una solución técnica integral mediante **`agy-glass`**, un motor nativo en **Rust**:
+1. Utiliza tus propios **wallpapers locales** (JPG, PNG, WebP) directamente en la interfaz.
+2. Aplica **Glassmorphism translúcido** con desenfoque adaptativo (`backdrop-filter: blur()`).
+3. **Capa Scrim inteligente:** Añade un filtro de contraste configurable que garantiza legibilidad 100% nítida de código y menús en fondos oscuros o claros.
+4. **Cero I/O en Renderizado (0% Disk I/O):** A diferencia de inyecciones ingenuas que leen disco en cada mutación del DOM, `agy-glass` mantiene los estilos en memoria RAM y observa cambios de archivo de forma asíncrona (`fs.watchFile`).
+5. **Detección Multi-Distro Nativa:** Soporte out-of-the-box para **Debian, Ubuntu, Linux Mint** y **Arch Linux / Manjaro** (AUR: `antigravity-bin`, `agy-cli`).
 
 ---
 
-## 🚀 Requisitos Previos
+## 🚀 Instalación y Uso Rápido (Motor Nativo Rust)
 
-En Linux Mint (o cualquier distribución Linux):
-
-* **Python 3.10+**
-* **Bibliotecas Python:**
-  ```bash
-  pip install pillow websockets
-  ```
-* **Node.js y npx** (para extraer y reempaquetar el archivo `app.asar`):
-  ```bash
-  sudo apt install nodejs npm
-  ```
-
----
-
-## 🛠️ Instalación y Uso Rápido
-
-### 1. Clonar el repositorio
+### 1. Clonar y Compilar
 ```bash
 git clone https://github.com/darwinsin822/antigravity-wallpaper-glassmorphism.git
 cd antigravity-wallpaper-glassmorphism
+cargo build --release
+```
+El ejecutable binario resultante estará disponible en `./target/release/agy-glass`.
+
+### 2. Diagnóstico del Entorno (`doctor`)
+Verifica automáticamente la detección de Antigravity en tu distribución y el estado del entorno:
+```bash
+./target/release/agy-glass doctor
 ```
 
-### 2. Parchear Antigravity 2.0 (Operación Segura de 1 sola vez)
-El script crea automáticamente una **copia de seguridad verificada con SHA-256** de tu `app.asar` antes de cualquier modificación:
+### 3. Parchear Antigravity IDE (Operación Segura de 1 sola vez)
+El motor crea una copia de seguridad verificada criptográficamente con **SHA-256** antes de aplicar la inyección reactiva:
 ```bash
-python3 scripts/patch_antigravity.py
+./target/release/agy-glass patch
+```
+*(Si tienes una instalación personalizada, puedes pasar la ruta explícita: `./target/release/agy-glass patch --asar "/ruta/a/resources/app.asar"`)*.
+
+### 4. Aplicar Wallpaper Local
+Puedes pasarle cualquier imagen de tu sistema (la imagen original nunca se altera; se optimiza en memoria a stream JPEG 93%):
+```bash
+./target/release/agy-glass apply ~/Pictures/mi_wallpaper.jpg
 ```
 
-### 3. Aplicar cualquier Wallpaper local
-Puedes pasarle cualquier imagen de tu sistema (la imagen original nunca se modifica; se procesa en memoria a stream optimizado):
+Opciones de personalización:
 ```bash
-python3 scripts/apply_wallpaper.py ~/Imágenes/WALLPAPERS/mi_wallpaper.jpg
+# Ajustar opacidad de fondo, intensidad de blur y contraste scrim
+./target/release/agy-glass apply mi_fondo.jpg --opacity 0.60 --blur 14 --scrim 0.50
 ```
 
-Para listar las imágenes disponibles en tu carpeta predeterminada:
+Para listar los wallpapers detectados en tus carpetas XDG (`~/Pictures`, etc.):
 ```bash
-python3 scripts/apply_wallpaper.py --list
+./target/release/agy-glass list
 ```
 
-### 4. Diagnosticar estado en tiempo real
-Con Antigravity abierto, ejecuta:
+### 5. Restauración Segura al Estado de Fábrica
+Si deseas revertir cualquier cambio y regresar al estado original verificado:
 ```bash
-python3 scripts/test_persistence.py
+./target/release/agy-glass restore
 ```
+*Si la verificación de integridad SHA-256 no coincide exactamente con el registro original, la operación se cancela automáticamente para prevenir corrupción.*
 
 ---
 
-## 🎨 Ajustes de Transparencia (Glassmorphism)
+## 🐧 Matriz de Compatibilidad Multi-Distro
 
-El archivo de configuración generado se aloja en:
-```bash
-~/.gemini/antigravity/custom/wallpaper.css
-```
-
-Puedes ajustar las variables de color en `:root` según tu preferencia:
-
-```css
-:root {
-  /* Opacidad de las capas de fondo (0.0 = transparente, 1.0 = negro sólido) */
-  --background: rgba(12, 14, 18, 0.65) !important;       /* Fondo general del editor */
-  --sidebar: rgba(14, 16, 22, 0.72) !important;          /* Sidebar y explorador */
-  --card: rgba(16, 18, 24, 0.70) !important;             /* Tarjetas y burbujas de chat */
-}
-```
-
-Gracias al **Heartbeat de 800ms**, al guardar cambios en este archivo, el IDE se actualizará **automáticamente en menos de un segundo** sin recargar la página.
+| Familia de Distribución | Paquetes / Rutas Soportadas |
+|---|---|
+| **Debian / Ubuntu / Linux Mint** | `/opt/Antigravity`, `/usr/lib/antigravity`, `/usr/share/antigravity`, `~/.local/share/antigravity`, `~/Documentos/Antigravity-x64` |
+| **Arch Linux / Manjaro / EndeavourOS** | AUR `antigravity-bin`, `agy-cli` (`/opt/antigravity-bin`, `/opt/antigravity`, `/usr/lib/antigravity`) |
+| **Cualquier distribución Linux** | Detección automática por `$PATH` (`which antigravity`, `which agy`) o variable `AGY_ASAR_PATH` |
 
 ---
 
-## 🔄 Restauración al Estado de Fábrica
+## 🏛️ Arquitectura Reactiva (Cero Disk I/O en DOM)
 
-Si alguna vez deseas revertir todas las modificaciones y volver al estado original de Antigravity:
+A diferencia de VS Code, la interfaz de Antigravity es una SPA reactiva que monta capas opacas (`.bg-background`).
 
-```bash
-python3 scripts/restore_antigravity.py
+El motor implementa un ciclo reactivo no invasivo:
 ```
-
-Esto restaura el `app.asar` original verificando su hash criptográfico SHA-256.
+┌─────────────────────────────────────────────────────────────┐
+│                 MOTOR NATIVO AGY-GLASS (RUST)               │
+├─────────────────────────────────────────────────────────────┤
+│  1. Inyección de Preload Reactivo en app.asar               │
+│  2. Caché de Estilos en RAM (Zero Disk Reads en eventos)    │
+│  3. fs.watchFile Asíncrono (Detección de cambios de imagen) │
+│  4. MutationObserver Ligero (Solo reancla nodo si es borrado)│
+│  5. Capa Scrim (--agy-wallpaper-scrim) para contraste total │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -135,42 +108,29 @@ Esto restaura el `app.asar` original verificando su hash criptográfico SHA-256.
 
 ```text
 antigravity-wallpaper-glassmorphism/
-├── README.md                 # Guía completa y documentación
-├── LICENSE                   # Licencia MIT
-├── .gitignore                # Reglas de exclusión de Git
-├── scripts/
-│   ├── apply_wallpaper.py    # CLI para aplicar wallpapers y cambio en caliente
-│   ├── patch_antigravity.py  # Instalador del motor permanente en app.asar
-│   ├── restore_antigravity.py# Restaurador de emergencia al estado original
-│   └── test_persistence.py  # Diagnóstico en vivo via Chrome DevTools Protocol
+├── Cargo.toml                  # Workspace de Rust (Edición 2021)
+├── AGENTS.md                   # Directrices y contratos de ingeniería para Agentes
+├── README.md                   # Documentación principal
+├── LICENSE                     # Licencia MIT
+├── crates/
+│   ├── agy-glass-core/         # Biblioteca Rust (paths, sha256, imágenes, css, patcher)
+│   └── agy-glass-cli/          # Binario ejecutable CLI (agy-glass)
 ├── styles/
-│   ├── template.css          # Plantilla CSS con selectores documentados
-│   └── active_sample.css     # Muestra de CSS activo
-└── docs/
-    ├── ARCHITECTURE.md       # Explicación del Doble Blindaje y 5 niveles de persistencia
-    └── TAILWIND_SPA_ANALYSIS.md # Análisis del DOM y Tailwind en Antigravity
+│   ├── template.css            # Plantilla CSS con selectores documentados
+│   └── active_sample.css       # Hoja de estilos de muestra para pruebas
+├── legacy/python/              # Scripts originales de Python preservados
+└── docs/                       # Especificaciones arquitectónicas detalladas
 ```
 
 ---
 
-## 👤 Autor
+## 👥 Maintainers & Contributors
 
-Desarrollado por **DarwinSin** ([@darwinsin822](https://github.com/darwinsin822))  
-Laboratorio de personalización y hardening de entornos de desarrollo en Linux Mint Cinnamon.
-
----
-
+* **DarwinSin** ([@darwinsin822](https://github.com/darwinsin822)) — Conceptualización original, diseño visual Glassmorphism & análisis del DOM.
+* **Kineyo** ([@Kineyo](https://github.com/Kineyo)) — Arquitectura del motor nativo en Rust (`agy-glass`), seguridad y optimización de runtime multi-distro.
 
 ---
-
-## 📊 Evidencia de Ejecución en Vivo
-
-A continuación se muestra la evidencia empírica de la ejecución determinista del pipeline de verificación e integridad técnica:
-
-<div align="center">
-  <img src="./assets/wallpaper-execution.png" alt="Execution Results" width="95%" style="border-radius: 8px; border: 1px solid #282e3e; margin: 16px 0;" />
-</div>
 
 ## 📄 Licencia
 
-Este proyecto está bajo la Licencia [MIT](LICENSE).
+Este proyecto está licenciado bajo la Licencia [MIT](LICENSE).
