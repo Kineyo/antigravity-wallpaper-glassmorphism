@@ -27,6 +27,11 @@ impl Default for GlassConfig {
 
 /// Genera la hoja de estilos Glassmorphism altamente optimizada y no invasiva
 pub fn generate_css(data_uri: &str, config: &GlassConfig) -> String {
+    let bg_op = config.background_opacity.clamp(0.0, 1.0);
+    let sb_op = config.sidebar_opacity.clamp(0.0, 1.0);
+    let card_op = config.card_opacity.clamp(0.0, 1.0);
+    let scrim_op = config.scrim_opacity.clamp(0.0, 1.0);
+
     format!(
 r#"/* ======================================================================
    Antigravity IDE — Wallpaper Glassmorphism (Motor Nativo Rust agy-glass)
@@ -43,27 +48,24 @@ r#"/* ======================================================================
   --agy-wallpaper-scrim: rgba(8, 10, 14, {scrim_op:.2}) !important;
 }}
 
-/* Fondo base de la ventana y HTML */
+/* Fondo base con capa Scrim integrada por gradiente lineal (0 costo de z-index) */
 html,
 body {{
-  background-image: url("{data_uri}") !important;
+  background-image: linear-gradient(var(--agy-wallpaper-scrim), var(--agy-wallpaper-scrim)), url("{data_uri}") !important;
   background-size: cover !important;
   background-position: center center !important;
   background-attachment: fixed !important;
   background-repeat: no-repeat !important;
 }}
 
-/* Capa Scrim de contraste adaptativo para garantizar legibilidad de sintaxis */
+/* Respaldo Scrim en subcapa detrás del contexto de apilamiento */
 body::before {{
   content: "" !important;
   position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
+  inset: 0 !important;
   background: var(--agy-wallpaper-scrim) !important;
   pointer-events: none !important;
-  z-index: 0 !important;
+  z-index: -1 !important;
 }}
 
 /* Contenedor principal de la aplicación Antigravity */
@@ -111,10 +113,10 @@ body::before {{
 }}
 "#,
         wallpaper_name = config.wallpaper_name,
-        bg_op = config.background_opacity,
-        sb_op = config.sidebar_opacity,
-        card_op = config.card_opacity,
-        scrim_op = config.scrim_opacity,
+        bg_op = bg_op,
+        sb_op = sb_op,
+        card_op = card_op,
+        scrim_op = scrim_op,
         sb_blur = config.sidebar_blur_px,
         card_blur = config.card_blur_px,
         data_uri = data_uri

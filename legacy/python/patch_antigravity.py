@@ -127,14 +127,12 @@ def patch(custom_asar_path=None):
 
         // 2. Observador reactivo de archivo en disco (Sin lecturas síncronas en renderizado)
         try {
-            if (fs.existsSync(cssPath)) {
-                fs.watchFile(cssPath, { interval: 300 }, (curr, prev) => {
-                    if (curr.mtime !== prev.mtime) {
-                        loadCSSFromDisk();
-                        ensureStyleNode();
-                    }
-                });
-            }
+            fs.watchFile(cssPath, { interval: 300 }, (curr, prev) => {
+                if (curr.mtimeMs !== prev.mtimeMs) {
+                    loadCSSFromDisk();
+                    ensureStyleNode();
+                }
+            });
         } catch (_) {}
 
         // 3. MutationObserver ultraligero: SOLO reinserta si el nodo fue removido (0% Disk I/O)
@@ -178,16 +176,21 @@ def patch(custom_asar_path=None):
 
         utils_code = utils_code.replace("devTools: !electron_1.app.isPackaged,", "devTools: true,")
         native_hook = """
-    // === Respaldo nativo de inyección de CSS a nivel de ventana de Electron ===
-    const applyNativeCSS = () => {
+    // === Respaldo nativo de inyección de CSS a nivel de ventana de Electron (Sin fuga de memoria) ===
+    let agyInsertedCssKey = null;
+    const applyNativeCSS = async () => {
         try {
             const os_mod = require('os');
             const path_mod = require('path');
             const fs_mod = require('fs');
             const cssPath = path_mod.join(os_mod.homedir(), '.gemini', 'antigravity', 'custom', 'wallpaper.css');
+            if (agyInsertedCssKey) {
+                try { await win.webContents.removeInsertedCSS(agyInsertedCssKey); } catch (_) {}
+                agyInsertedCssKey = null;
+            }
             if (fs_mod.existsSync(cssPath)) {
                 const css = fs_mod.readFileSync(cssPath, 'utf-8');
-                void win.webContents.insertCSS(css);
+                agyInsertedCssKey = await win.webContents.insertCSS(css);
             }
         } catch (_) {}
     };

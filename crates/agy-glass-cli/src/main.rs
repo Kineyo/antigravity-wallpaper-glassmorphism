@@ -1,21 +1,22 @@
 use clap::{Parser, Subcommand};
 use colored::*;
-use std::path::PathBuf;
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
 use std::process::Command;
-use tempfile::Builder as TempDirBuilder;
 
 use agy_glass_core::{
-    find_antigravity_asar, get_candidate_asar_paths, get_wallpaper_dirs,
+    expand_tilde, find_antigravity_asar, get_candidate_asar_paths, get_wallpaper_dirs,
     get_custom_css_path, get_backup_base_dir, get_devtools_port_file,
     create_backup, verify_backup, optimize_image_to_data_uri,
     generate_css, GlassConfig, patch_preload, patch_utils,
+    read_file_from_asar, patch_asar_surgically,
 };
 
 #[derive(Parser)]
 #[command(name = "agy-glass")]
 #[command(author = "Kineyo & DarwinSin")]
 #[command(version = "0.2.0")]
-#[command(about = "Motor nativo ultrarrápido de personalización Glassmorphism para Antigravity IDE", long_about = None)]
+#[command(about = "Motor nativo ultrarrápido de personalización Glassmorphism para Antigravity IDE (100% Rust, 0 Node.js)", long_about = None)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -23,7 +24,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Parchea Antigravity IDE instalando el motor reactivo de persistencia
+    /// Parchea Antigravity IDE en memoria usando el motor ASAR nativo en Rust (0 dependencias externas)
     Patch {
         #[arg(short, long, help = "Ruta manual al archivo resources/app.asar")]
         asar: Option<PathBuf>,
@@ -47,7 +48,7 @@ enum Commands {
     /// Lista los wallpapers disponibles en las carpetas detectadas (XDG Pictures)
     List,
 
-    /// Restaura Antigravity IDE a su estado previo sin modificaciones
+    /// Restaura Antigravity IDE a su estado previo verificando integridad SHA-256
     Restore {
         #[arg(short, long, help = "Ruta manual al archivo resources/app.asar")]
         asar: Option<PathBuf>,
@@ -60,12 +61,28 @@ enum Commands {
     Doctor,
 }
 
+fn maybe_resign_macos_bundle(asar_path: &Path) {
+    if cfg!(target_os = "macos") {
+        // Si la ruta es /Applications/Antigravity.app/Contents/Resources/app.asar, obtener el .app
+        for ancestor in asar_path.ancestors() {
+            if ancestor.extension().and_then(|e| e.to_str()) == Some("app") {
+                println!("{} {}", "🍎 Aplicando firma ad-hoc de macOS Gatekeeper en:".cyan(), ancestor.display());
+                let _ = Command::new("xattr").args(["-cr", &ancestor.to_string_lossy()]).status();
+                let _ = Command::new("codesign")
+                    .args(["--force", "--deep", "--sign", "-", &ancestor.to_string_lossy()])
+                    .status();
+                break;
+            }
+        }
+    }
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
     match cli.command {
         Commands::Patch { asar } => {
-            println!("{}", "🌌 Iniciando parcheo de Antigravity IDE...".bold().cyan());
+            println!("{}", "🌌 Iniciando parcheo quirúrgico de Antigravity IDE (Motor ASAR Rust)...".bold().cyan());
             let asar_path = match find_antigravity_asar(asar.as_deref()) {
                 Some(p) => p,
                 None => {
@@ -85,58 +102,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let (backup_file, sha) = create_backup(&asar_path, &backup_base)?;
             println!("{} {} (SHA-256: {})", "✅ Respaldo creado en:".green(), backup_file.display(), &sha[..16]);
 
-            let tmp_dir = TempDirBuilder::new().prefix("agy_glass_").tempdir()?;
-            let extract_dir = tmp_dir.path().join("extracted");
-            let repack_file = tmp_dir.path().join("repacked.asar");
-
-            println!("{}", "📂 Extrayendo app.asar con @electron/asar...".cyan());
-            let extract_status = Command::new("npx")
-                .args(["--yes", "@electron/asar", "extract", asar_path.to_str().unwrap(), extract_dir.to_str().unwrap()])
-                .status()?;
-
-            if !extract_status.success() {
-                eprintln!("{}", "❌ Error al extraer app.asar".bold().red());
-                std::process::exit(1);
-            }
-
-            let preload_path = extract_dir.join("dist/preload.js");
-            let utils_path = extract_dir.join("dist/utils.js");
-
-            if !preload_path.exists() || !utils_path.exists() {
-                eprintln!("{}", "❌ Estructura de app.asar inesperada. Falta preload.js o utils.js".bold().red());
-                std::process::exit(1);
-            }
-
-            println!("{}", "⚡ Inyectando motor reactivo en preload.js...".cyan());
-            let preload_code = std::fs::read_to_string(&preload_path)?;
+            println!("{}", "⚡ Leyendo dist/preload.js y dist/utils.js directamente desde app.asar...".cyan());
+            let preload_bytes = read_file_from_asar(&asar_path, "dist/preload.js")?;
+            let preload_code = String::from_utf8_lossy(&preload_bytes);
             let patched_preload = patch_preload(&preload_code);
-            std::fs::write(&preload_path, patched_preload)?;
 
-            println!("{}", "⚡ Parcheando utils.js (DevTools y anclaje Chromium)...".cyan());
-            let utils_code = std::fs::read_to_string(&utils_path)?;
-            if let Ok(patched_utils) = patch_utils(&utils_code) {
-                std::fs::write(&utils_path, patched_utils)?;
-            } else {
-                println!("{}", "⚠️ Aviso: Punto de anclaje no encontrado en utils.js; se mantendrá inyección preload.".yellow());
+            let mut replacements = BTreeMap::new();
+            replacements.insert("dist/preload.js".to_string(), patched_preload.into_bytes());
+
+            if let Ok(utils_bytes) = read_file_from_asar(&asar_path, "dist/utils.js") {
+                let utils_code = String::from_utf8_lossy(&utils_bytes);
+                match patch_utils(&utils_code) {
+                    Ok(patched_utils) => {
+                        replacements.insert("dist/utils.js".to_string(), patched_utils.into_bytes());
+                    }
+                    Err(_) => {
+                        println!("{}", "⚠️ Aviso: Punto de anclaje no encontrado en utils.js; se mantendrá inyección preload.".yellow());
+                    }
+                }
             }
 
-            println!("{}", "📦 Reempaquetando app.asar...".cyan());
-            let pack_status = Command::new("npx")
-                .args(["--yes", "@electron/asar", "pack", extract_dir.to_str().unwrap(), repack_file.to_str().unwrap()])
-                .status()?;
+            println!("{}", "🦀 Reconstruyendo tabla de integridad SHA-256 y offsets ASAR de forma atómica...".cyan());
+            patch_asar_surgically(&asar_path, &replacements)?;
+            maybe_resign_macos_bundle(&asar_path);
 
-            if !pack_status.success() {
-                eprintln!("{}", "❌ Error al reempaquetar app.asar".bold().red());
-                std::process::exit(1);
-            }
-
-            std::fs::copy(&repack_file, &asar_path)?;
-            println!("{}", "🎉 ¡Antigravity IDE parcheado exitosamente con el motor nativo!".bold().green());
+            println!("{}", "🎉 ¡Antigravity IDE parcheado exitosamente sin dependencias externas!".bold().green());
             println!("💡 Para aplicar un wallpaper ejecuta: agy-glass apply \"imagen.jpg\"");
         }
 
         Commands::Apply { image, opacity, blur, scrim } => {
-            let mut image_path = PathBuf::from(&image);
+            let mut image_path = expand_tilde(Path::new(&image));
             if !image_path.exists() {
                 let mut found = false;
                 for wdir in get_wallpaper_dirs() {
@@ -154,15 +149,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             let file_name = image_path.file_name().unwrap_or_default().to_string_lossy().to_string();
-            println!("{} {}", "🖼️ Procesando imagen:".cyan(), file_name);
+            println!("{} {}", "🖼️ Procesando imagen en memoria:".cyan(), file_name);
+
+            let clamped_op = opacity.clamp(0.0, 1.0);
+            let clamped_scrim = scrim.clamp(0.0, 1.0);
 
             let data_uri = optimize_image_to_data_uri(&image_path)?;
             let config = GlassConfig {
                 wallpaper_name: file_name,
-                background_opacity: opacity,
-                sidebar_opacity: opacity + 0.07,
-                card_opacity: opacity + 0.05,
-                scrim_opacity: scrim,
+                background_opacity: clamped_op,
+                sidebar_opacity: (clamped_op + 0.07).clamp(0.0, 1.0),
+                card_opacity: (clamped_op + 0.05).clamp(0.0, 1.0),
+                scrim_opacity: clamped_scrim,
                 sidebar_blur_px: blur,
                 card_blur_px: blur.saturating_sub(2),
             };
@@ -254,6 +252,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("{}", "✅ Verificación criptográfica SHA-256: CORRECTA".green());
 
             std::fs::copy(target_backup, &asar_path)?;
+            maybe_resign_macos_bundle(&asar_path);
             println!("{}", "🎉 ¡Restauración completada con éxito! Antigravity está en su estado original.".bold().green());
         }
 

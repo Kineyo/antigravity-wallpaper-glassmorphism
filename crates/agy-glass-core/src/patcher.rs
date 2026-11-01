@@ -26,16 +26,21 @@ pub fn get_preload_patch_code() -> &'static str {
                 } else {
                     cachedCSS = '';
                 }
-            } catch (_) {}
+            } catch (_) {
+                cachedCSS = '';
+            }
         }
 
         function ensureStyleNode() {
             try {
-                if (!cachedCSS) return;
+                let existing = document.getElementById(STYLE_ID);
+                if (!cachedCSS) {
+                    if (existing) existing.remove();
+                    return;
+                }
                 const target = document.head || document.documentElement;
                 if (!target) return;
 
-                let existing = document.getElementById(STYLE_ID);
                 if (existing) {
                     if (existing.textContent !== cachedCSS) {
                         existing.textContent = cachedCSS;
@@ -55,22 +60,21 @@ pub fn get_preload_patch_code() -> &'static str {
         window.addEventListener('DOMContentLoaded', ensureStyleNode);
         window.addEventListener('load', ensureStyleNode);
 
+        // Vigilar cssPath incluso si aún no ha sido creado en el primer arranque
         try {
-            if (fs.existsSync(cssPath)) {
-                fs.watchFile(cssPath, { interval: 300 }, (curr, prev) => {
-                    if (curr.mtime !== prev.mtime) {
-                        loadCSSFromDisk();
-                        ensureStyleNode();
-                    }
-                });
-            }
+            fs.watchFile(cssPath, { interval: 300 }, (curr, prev) => {
+                if (curr.mtimeMs !== prev.mtimeMs) {
+                    loadCSSFromDisk();
+                    ensureStyleNode();
+                }
+            });
         } catch (_) {}
 
         function setupObserver() {
             try {
                 if (!document.documentElement) return;
                 const observer = new MutationObserver(() => {
-                    if (!document.getElementById(STYLE_ID)) {
+                    if (cachedCSS && !document.getElementById(STYLE_ID)) {
                         ensureStyleNode();
                     }
                 });
@@ -97,16 +101,21 @@ pub fn get_preload_patch_code() -> &'static str {
 
 pub fn get_utils_native_hook() -> &'static str {
     r#"
-    // === Respaldo nativo de inyección de CSS a nivel de ventana de Electron ===
-    const applyNativeCSS = () => {
+    // === Respaldo nativo de inyección de CSS a nivel de ventana de Electron (Sin fuga de memoria) ===
+    let agyInsertedCssKey = null;
+    const applyNativeCSS = async () => {
         try {
             const os_mod = require('os');
             const path_mod = require('path');
             const fs_mod = require('fs');
             const cssPath = path_mod.join(os_mod.homedir(), '.gemini', 'antigravity', 'custom', 'wallpaper.css');
+            if (agyInsertedCssKey) {
+                try { await win.webContents.removeInsertedCSS(agyInsertedCssKey); } catch (_) {}
+                agyInsertedCssKey = null;
+            }
             if (fs_mod.existsSync(cssPath)) {
                 const css = fs_mod.readFileSync(cssPath, 'utf-8');
-                void win.webContents.insertCSS(css);
+                agyInsertedCssKey = await win.webContents.insertCSS(css);
             }
         } catch (_) {}
     };
@@ -117,7 +126,7 @@ pub fn get_utils_native_hook() -> &'static str {
 "#
 }
 
-/// Aplica el parche al código fuente de preload.js de forma idempotente
+/// Aplica el parche al código fuente de `preload.js` de forma idempotente
 pub fn patch_preload(content: &str) -> String {
     if content.contains(PRELOAD_PATCH_SIGNATURE) {
         return content.to_string();
@@ -125,7 +134,7 @@ pub fn patch_preload(content: &str) -> String {
     format!("{}\n{}", content, get_preload_patch_code())
 }
 
-/// Aplica el hook nativo al código fuente de utils.js verificando los puntos de anclaje
+/// Aplica el hook nativo al código fuente de `utils.js` verificando los puntos de anclaje
 pub fn patch_utils(content: &str) -> Result<String> {
     let mut updated = content
         .replace("devTools: !electron_1.app.isPackaged,", "devTools: true,")
