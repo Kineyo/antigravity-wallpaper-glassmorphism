@@ -1,7 +1,7 @@
 # 🌌 Antigravity Wallpaper Glassmorphism (`agy-glass`)
 
 <div align="center">
-  <img src="./assets/antigravity-hero-banner.png" alt="antigravity-wallpaper-glassmorphism Banner" width="80%" style="border-radius: 12px; margin-bottom: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.7);" />
+  <img src="assets/antigravity-hero-banner.png" alt="antigravity-wallpaper-glassmorphism Banner" width="80%" style="border-radius: 12px; margin-bottom: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.7);" />
 
   <br />
 
