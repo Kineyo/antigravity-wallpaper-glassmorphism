@@ -1,7 +1,9 @@
 # 🌌 Antigravity Wallpaper Glassmorphism (`agy-glass`)
 
 <div align="center">
-  <img src="./assets/rust-engine-banner.jpg" alt="Antigravity Glassmorphism Rust Engine Banner" width="100%" style="border-radius: 12px; margin-bottom: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.7);" />
+  <img src="./assets/antigravity-hero-banner.png" alt="antigravity-wallpaper-glassmorphism Banner" width="80%" style="border-radius: 12px; margin-bottom: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.7);" />
+
+  <br />
 
   [![Engine: Rust 2021](https://img.shields.io/badge/Engine-Rust%202021%20(Zero%20Node.js)-DEA584.svg?logo=rust&logoColor=white)](https://www.rust-lang.org/)
   [![Linux: Debian & Arch](https://img.shields.io/badge/Linux-Debian%20%7C%20Ubuntu%20%7C%20Mint%20%7C%20Arch%20(AUR)-87cf3e.svg?logo=linux&logoColor=white)](https://archlinux.org/)
@@ -14,14 +16,14 @@
 > **Motor nativo en Rust (`agy-glass`) para personalización avanzada de fondos y efecto Glassmorphism en Google Antigravity 2.0. Parcheo quirúrgico de paquetes `.asar` sin depender de Node.js/npx, caché reactiva en RAM con 0% Disk I/O durante el renderizado y soporte multiplataforma para Linux (Debian/Arch), macOS y Windows.**
 
 <div align="center">
-  <img src="./assets/antigravity-glassmorphism-showcase.jpg" alt="Google Antigravity 2.0 Glassmorphism UI Showcase" width="100%" style="border-radius: 10px; margin: 16px 0; box-shadow: 0 8px 24px rgba(0,0,0,0.6);" />
+  <img src="./assets/antigravity-glassmorphism-showcase.jpg" alt="Google Antigravity 2.0 Glassmorphism UI Showcase" width="90%" style="border-radius: 10px; margin: 16px 0; box-shadow: 0 8px 24px rgba(0,0,0,0.6);" />
 </div>
 
 ---
 
 ## ⚡ ¿Por qué `agy-glass` en Rust?
 
- Originalmente, personalizar Antigravity requería tener instalados **Python 3.10+, pip, Pillow, websockets, Node.js, npm y `@electron/asar`**, extrayendo miles de archivos a `/tmp` y ejecutando lecturas síncronas a disco en cada mutación del DOM.
+Originalmente, personalizar Antigravity requería tener instalados **Python 3.10+, pip, Pillow, websockets, Node.js, npm y `@electron/asar`**, extrayendo miles de archivos a `/tmp` y ejecutando lecturas síncronas a disco en cada mutación del DOM.
 
 El nuevo motor **`agy-glass`** reescribe toda la arquitectura en **Rust puro**:
 
@@ -37,71 +39,37 @@ El nuevo motor **`agy-glass`** reescribe toda la arquitectura en **Rust puro**:
 
 ## 🏛️ Arquitectura Visual del Sistema
 
-### 1. Flujo del Parcheador Quirúrgico ASAR y Motor de Imágenes (Rust)
+### 1A. Flujo del Parcheador Quirúrgico ASAR (`agy-glass patch`)
 
-```mermaid
-flowchart TD
-    subgraph CLI ["🦀 Binario Nativo: agy-glass (Rust)"]
-        A["agy-glass patch"] --> B["Autodetección Multi-OS\n(Debian, Arch AUR, macOS, Windows)"]
-        B --> C["Respaldo Atómico + Hash SHA-256"]
-        C --> D["Parser ASAR Nativo en Memoria\n(Lee Pickle Header + JSON Tree)"]
-        D --> E["Inyección Quirúrgica:\ndist/preload.js & dist/utils.js"]
-        E --> F["Recálculo de Offsets y Bloques SHA-256 (4MB)"]
-        F --> G["Escritura Atómica de app.asar\n(+ Firma Ad-Hoc en macOS)"]
-    end
+<div align="center">
+  <img src="./assets/diagram-asar-patch.png" alt="Diagrama del Parcheador Quirúrgico ASAR en Rust" width="92%" style="border-radius: 10px; margin: 12px 0; box-shadow: 0 6px 20px rgba(0,0,0,0.5);" />
+</div>
 
-    subgraph APPLY ["🎨 Pipeline de Imagen en Memoria"]
-        H["agy-glass apply imagen.jpg"] --> I["Decodificación & Resize <= 1440p\n(image-rs)"]
-        I --> J["Compresión JPEG 93% en RAM + Base64"]
-        J --> K["Generación CSS Glassmorphism + Capa Scrim"]
-        K --> L["~/.gemini/antigravity/custom/wallpaper.css"]
-    end
-```
+### 1B. Pipeline de Procesamiento de Imagen en Memoria (`agy-glass apply`)
+
+<div align="center">
+  <img src="./assets/diagram-image-pipeline.png" alt="Diagrama del Pipeline de Imagen en Memoria" width="92%" style="border-radius: 10px; margin: 12px 0; box-shadow: 0 6px 20px rgba(0,0,0,0.5);" />
+</div>
 
 ### 2. Ciclo de Vida en Tiempo de Ejecución (0% Disk I/O en el Hilo de Renderizado)
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Disk as Disco (~/.gemini/.../wallpaper.css)
-    participant Node as Electron Preload (Node.js Watcher)
-    participant RAM as Caché en Memoria (cachedCSS)
-    participant DOM as Chromium DOM (<style id="agy-wallpaper-css">)
-    participant CLI as Usuario (agy-glass apply)
-
-    Note over Disk,DOM: Arranque Inicial de Antigravity IDE
-    Node->>Disk: 1 sola lectura al iniciar (loadCSSFromDisk)
-    Disk-->>RAM: Almacena CSS en variable cachedCSS
-    RAM->>DOM: Inyecta nodo <style> en document.head
-
-    Note over RAM,DOM: Durante Streaming de IA / Edición de Código (Miles de mutaciones/seg)
-    DOM->>RAM: MutationObserver verifica ¿Existe #agy-wallpaper-css?
-    RAM-->>DOM: Sí existe -> No hace NADA (0% uso de disco y CPU)
-
-    Note over Disk,CLI: Cambio de Wallpaper en Caliente (Hot-Reload)
-    CLI->>Disk: Escribe nuevo wallpaper.css
-    Disk-->>Node: Evento del SO (fs.watchFile detecta cambio de mtimeMs)
-    Node->>RAM: Actualiza cachedCSS en memoria
-    RAM->>DOM: Actualiza style.textContent en < 300ms sin recargar el IDE
-```
+<div align="center">
+  <img src="./assets/diagram-reactive-runtime.png" alt="Ciclo de Vida Reactivo 0% Disk I/O" width="92%" style="border-radius: 10px; margin: 12px 0; box-shadow: 0 6px 20px rgba(0,0,0,0.5);" />
+</div>
 
 ---
 
 ## 🌍 Ecosistema Multiplataforma (Linux, macOS, Windows & `agy CLI`)
 
 <div align="center">
-  <img src="./assets/multi-os-ecosystem.jpg" alt="Multi-OS Rust Ecosystem" width="95%" style="border-radius: 10px; margin: 16px 0; box-shadow: 0 8px 24px rgba(0,0,0,0.6);" />
+  <img src="./assets/multi-os-ecosystem.jpg" alt="Multi-OS Rust Ecosystem" width="85%" style="border-radius: 10px; margin: 14px 0; box-shadow: 0 8px 24px rgba(0,0,0,0.6);" />
 </div>
 
-### ¿Cómo funciona en cada entorno?
+### 3. ¿Cómo opera el núcleo en cada entorno?
 
-```mermaid
-flowchart LR
-    Core["🦀 Núcleo agy-glass-core"] --> Linux["🐧 Linux\n• Debian / Ubuntu / Mint (/opt, /usr/lib)\n• Arch Linux / Manjaro (AUR antigravity-bin)\n• Detección XDG Pictures"]
-    Core --> Mac["🍎 macOS\n• /Applications/Antigravity.app\n• Firma automática Gatekeeper (codesign)\n• Aceleración nativa Metal / Quartz Blur"]
-    Core --> Win["🪟 Windows 10/11\n• %LOCALAPPDATA%\\Programs\\Antigravity\n• %USERPROFILE%\\.gemini\\...\n• Verificación de bloqueo de archivos"]
-    Core --> AgyCLI["⌨️ agy CLI (Terminal)\n• Control por línea de comandos\n• Sincronización con ~/.gemini/\n• Transparencia vía Ghostty / Kitty / Alacritty"]
-```
+<div align="center">
+  <img src="./assets/diagram-multi-os.png" alt="Matriz de Ejecución Multiplataforma y Sincronización con agy CLI" width="92%" style="border-radius: 10px; margin: 12px 0; box-shadow: 0 6px 20px rgba(0,0,0,0.5);" />
+</div>
 
 ---
 
@@ -211,7 +179,7 @@ antigravity-wallpaper-glassmorphism/
 │   │   ├── src/patcher.rs      # Inyección reactiva sin fugas de memoria
 │   │   └── src/backup.rs       # Copias de seguridad y validación SHA-256
 │   └── agy-glass-cli/          # Binario CLI (agy-glass) con clap
-├── assets/                     # Banners e ilustraciones técnicas del repositorio
+├── assets/                     # Banners y diagramas técnicos Glassmorphism en alta resolución
 ├── styles/                     # Plantillas base CSS documentadas
 ├── legacy/python/              # Scripts originales en Python preservados como referencia
 └── docs/                       # Análisis de arquitectura SPA y Tailwind
@@ -222,7 +190,7 @@ antigravity-wallpaper-glassmorphism/
 ## 📊 Evidencia de Ejecución Determinista
 
 <div align="center">
-  <img src="./assets/wallpaper-execution.png" alt="Execution Results" width="95%" style="border-radius: 8px; border: 1px solid #282e3e; margin: 16px 0;" />
+  <img src="./assets/wallpaper-execution.png" alt="Execution Results" width="90%" style="border-radius: 8px; border: 1px solid #282e3e; margin: 16px 0;" />
 </div>
 
 ---
