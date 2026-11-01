@@ -48,6 +48,7 @@ def generate_glassmorphism_css(data_uri, wallpaper_name):
   --color-sidebar-secondary: rgba(18, 20, 28, 0.70) !important;
   --card: rgba(16, 18, 24, 0.70) !important;
   --color-card: rgba(16, 18, 24, 0.70) !important;
+  --agy-wallpaper-scrim: rgba(8, 10, 14, 0.45) !important;
 }}
 
 /* Fondo base de la ventana y HTML */
@@ -60,14 +61,23 @@ body {{
   background-repeat: no-repeat !important;
 }}
 
+/* Capa de contraste adaptativo (Scrim) para proteger legibilidad de sintaxis */
+body::before {{
+  content: "" !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: var(--agy-wallpaper-scrim) !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}}
+
 /* Contenedor principal de la aplicación Antigravity */
 .bg-background,
 [class*="bg-background"] {{
   background-color: transparent !important;
-  background-image: url("{data_uri}") !important;
-  background-size: cover !important;
-  background-position: center center !important;
-  background-attachment: fixed !important;
 }}
 
 /* Sidebar y paneles de navegación con Glassmorphism translúcido */
@@ -106,12 +116,6 @@ body {{
 .border-border,
 [class*="border-border"] {{
   border-color: rgba(255, 255, 255, 0.08) !important;
-}}
-
-/* Preservar legibilidad absoluta del texto y elementos interactivos */
-.text-foreground,
-p, span, h1, h2, h3, h4, h5, h6, pre, code, button, input, textarea {{
-  opacity: 1 !important;
 }}
 """
 

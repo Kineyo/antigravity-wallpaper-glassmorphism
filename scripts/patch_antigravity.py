@@ -75,7 +75,7 @@ def patch(custom_asar_path=None):
 
         preload_patch = """
 // ============================================================================
-// SISTEMA PERMANENTE DE WALLPAPER GLASSMORPHISM (INDESTRUCTIBLE)
+// SISTEMA REACTIVO DE WALLPAPER GLASSMORPHISM (EVENT-DRIVEN, 0% DISK I/O EN DOM)
 // ============================================================================
 (function() {
     try {
@@ -85,63 +85,88 @@ def patch(custom_asar_path=None):
         const cssPath = path.join(os.homedir(), '.gemini', 'antigravity', 'custom', 'wallpaper.css');
         const STYLE_ID = 'agy-wallpaper-css';
 
-        function getCSS() {
+        let cachedCSS = '';
+        window.__agy_permanent_heartbeat = true;
+
+        function loadCSSFromDisk() {
             try {
-                if (fs.existsSync(cssPath)) return fs.readFileSync(cssPath, 'utf-8');
+                if (fs.existsSync(cssPath)) {
+                    cachedCSS = fs.readFileSync(cssPath, 'utf-8');
+                } else {
+                    cachedCSS = '';
+                }
             } catch (_) {}
-            return '';
         }
 
-        function applyWallpaperStyle() {
+        function ensureStyleNode() {
             try {
+                if (!cachedCSS) return;
                 const target = document.head || document.documentElement;
                 if (!target) return;
-                const css = getCSS();
-                if (!css) return;
 
                 let existing = document.getElementById(STYLE_ID);
                 if (existing) {
-                    if (existing.textContent !== css) existing.textContent = css;
+                    if (existing.textContent !== cachedCSS) {
+                        existing.textContent = cachedCSS;
+                    }
                     return;
                 }
 
                 const style = document.createElement('style');
                 style.id = STYLE_ID;
-                style.textContent = css;
+                style.textContent = cachedCSS;
                 target.appendChild(style);
             } catch (_) {}
         }
 
-        applyWallpaperStyle();
-        window.addEventListener('DOMContentLoaded', applyWallpaperStyle);
-        window.addEventListener('load', applyWallpaperStyle);
+        // 1. Carga inicial en memoria
+        loadCSSFromDisk();
+        ensureStyleNode();
+        window.addEventListener('DOMContentLoaded', ensureStyleNode);
+        window.addEventListener('load', ensureStyleNode);
 
+        // 2. Observador reactivo de archivo en disco (Sin lecturas síncronas en renderizado)
+        try {
+            if (fs.existsSync(cssPath)) {
+                fs.watchFile(cssPath, { interval: 300 }, (curr, prev) => {
+                    if (curr.mtime !== prev.mtime) {
+                        loadCSSFromDisk();
+                        ensureStyleNode();
+                    }
+                });
+            }
+        } catch (_) {}
+
+        // 3. MutationObserver ultraligero: SOLO reinserta si el nodo fue removido (0% Disk I/O)
         function setupObserver() {
             try {
                 if (!document.documentElement) return;
-                const observer = new MutationObserver(() => applyWallpaperStyle());
-                observer.observe(document.documentElement, { childList: true, subtree: true });
+                const observer = new MutationObserver(() => {
+                    if (!document.getElementById(STYLE_ID)) {
+                        ensureStyleNode();
+                    }
+                });
+                observer.observe(document.documentElement, { childList: true, subtree: false });
             } catch (_) {}
         }
 
         if (document.documentElement) setupObserver();
-        else document.addEventListener('readystatechange', () => { if (document.documentElement) setupObserver(); applyWallpaperStyle(); });
+        else document.addEventListener('readystatechange', () => { if (document.documentElement) setupObserver(); ensureStyleNode(); });
 
+        // 4. Intercepción de History API para navegación SPA
         try {
             const origPushState = history.pushState;
-            history.pushState = function() { origPushState.apply(this, arguments); applyWallpaperStyle(); };
+            history.pushState = function() { origPushState.apply(this, arguments); ensureStyleNode(); };
             const origReplaceState = history.replaceState;
-            history.replaceState = function() { origReplaceState.apply(this, arguments); applyWallpaperStyle(); };
-            window.addEventListener('popstate', applyWallpaperStyle);
+            history.replaceState = function() { origReplaceState.apply(this, arguments); ensureStyleNode(); };
+            window.addEventListener('popstate', ensureStyleNode);
         } catch (_) {}
-
-        setInterval(applyWallpaperStyle, 800);
     } catch (e) {
         console.error('[Wallpaper Preload] Error:', e);
     }
 })();
 """
-        if "SISTEMA PERMANENTE DE WALLPAPER GLASSMORPHISM" not in preload_code:
+        if "SISTEMA REACTIVO DE WALLPAPER GLASSMORPHISM" not in preload_code:
             preload_code += preload_patch
             with open(preload_path, "w") as f:
                 f.write(preload_code)
